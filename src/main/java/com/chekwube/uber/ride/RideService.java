@@ -97,6 +97,10 @@ public class RideService {
         if (!driverPresence.isAvailable()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Go online before accepting rides");
         }
+        if (driverPresence.getLastLocationAt() == null
+            || driverPresence.getLastLocationAt().isBefore(java.time.Instant.now().minusSeconds(120))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Send a fresh location update before accepting rides");
+        }
         if (rides.existsByDriverUserIdAndStatusIn(driverId, ACTIVE_DRIVER_STATUSES)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Driver already has an active ride");
         }
