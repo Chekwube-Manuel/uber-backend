@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,6 +20,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findByProviderReference(String reference);
     Optional<Payment> findByProviderReferenceAndRiderUserId(String reference, UUID riderUserId);
     Optional<Payment> findTopByRideIdAndRiderUserIdOrderByCreatedAtDesc(UUID rideId, UUID riderUserId);
+    Optional<Payment> findByRideIdAndStatus(UUID rideId, PaymentStatus status);
     boolean existsByRideIdAndStatus(UUID rideId, PaymentStatus status);
     List<Payment> findTop20ByRiderUserIdOrderByCreatedAtDesc(UUID riderUserId);
+    List<Payment> findTop50ByStatusInAndUpdatedAtBeforeOrderByUpdatedAtAsc(Collection<PaymentStatus> statuses, Instant updatedAt);
 }
