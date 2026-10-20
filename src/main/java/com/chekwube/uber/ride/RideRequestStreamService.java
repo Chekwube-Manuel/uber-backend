@@ -1,6 +1,5 @@
 package com.chekwube.uber.ride;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -14,12 +13,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RideRequestStreamService {
     private final RideService rides;
     private final ConcurrentHashMap<UUID, Subscription> subscriptions = new ConcurrentHashMap<>();
-    private final long heartbeatIntervalMs;
 
-    public RideRequestStreamService(RideService rides,
-            @Value("${app.dispatch.notification-poll-ms:3000}") long heartbeatIntervalMs) {
+    public RideRequestStreamService(RideService rides) {
         this.rides = rides;
-        this.heartbeatIntervalMs = Math.max(1000, heartbeatIntervalMs);
     }
 
     public SseEmitter subscribe(UUID driverId) {
