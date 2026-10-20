@@ -49,6 +49,7 @@ public class Payment {
     }
     public void markRefundPending() { this.status = PaymentStatus.REFUND_PENDING; this.updatedAt = Instant.now(); }
     public void markRefunded() { this.status = PaymentStatus.REFUNDED; this.updatedAt = Instant.now(); }
+    public void markRefundFailed() { this.status = PaymentStatus.SUCCESS; this.updatedAt = Instant.now(); }
     public void markChargeback(String disputeReference, String disputeStatus) {
         this.disputeReference = disputeReference; this.disputeStatus = disputeStatus;
         this.status = PaymentStatus.CHARGEBACK; this.updatedAt = Instant.now();
