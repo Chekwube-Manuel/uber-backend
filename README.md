@@ -8,7 +8,9 @@ A ride-hailing backend foundation built with Java 21 and Spring Boot.
 - PostgreSQL and Flyway migrations
 - Request validation and Actuator health/metrics endpoints
 - Docker image and local Docker Compose environment
-- Automated health endpoint test
+- Automated health endpoint and authentication service tests
+- Stateless JWT authentication with BCrypt password hashing
+- Role-aware accounts: `RIDER`, `DRIVER`, and `ADMIN` (admin self-registration is blocked)
 - Configurable Tomcat and HikariCP connection-pool settings
 
 ## Run locally
@@ -16,8 +18,20 @@ A ride-hailing backend foundation built with Java 21 and Spring Boot.
 Requirements: Java 21, Maven 3.9+, Docker.
 
 ```bash
+# Generate a 256-bit key encoded as Base64 and save it in your shell environment.
+export APP_TOKEN_KEY="$(openssl rand -base64 32)"
 docker compose up --build
 ```
+
+Register a rider (password must be at least 12 characters):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \\
+  -H 'Content-Type: application/json' \\
+  -d '{"email":"rider@example.com","password":"correct-horse-battery-staple"}'
+```
+
+Log in with `POST /api/v1/auth/login` using the same email and password. The response contains a short-lived bearer token. Send it as `Authorization: Bearer <accessToken>` when calling protected endpoints. Keep `APP_TOKEN_KEY` private and stable across app restarts.
 
 Check the API:
 
@@ -47,7 +61,7 @@ Use PostgreSQL as the source of truth. Introduce Redis for ephemeral driver-loca
 ## Production checklist
 
 - Replace development database credentials with secrets.
-- Add authentication, authorization, rate limiting, and idempotency for write endpoints.
+- Add token refresh/revocation, rate limiting, and idempotency for write endpoints.
 - Add structured logs, distributed tracing, and metrics.
 - Configure TLS, reverse proxy/load balancer, readiness/liveness probes, and graceful shutdown.
 - Add integration tests and database migration tests.
