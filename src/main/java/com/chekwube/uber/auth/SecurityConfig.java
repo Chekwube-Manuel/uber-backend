@@ -14,7 +14,7 @@ public class SecurityConfig {
  @Bean SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
   return http.csrf(csrf -> csrf.disable()).httpBasic(basic -> basic.disable()).formLogin(form -> form.disable())
    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-   .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/auth/**", "/api/v1/health", "/actuator/health/**").permitAll()
+   .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/auth/**", "/api/v1/health", "/api/v1/webhooks/paystack", "/actuator/health/**").permitAll()
     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
     .requestMatchers("/api/v1/rider/**").hasRole("RIDER")
     .requestMatchers("/api/v1/driver/**").hasRole("DRIVER")
