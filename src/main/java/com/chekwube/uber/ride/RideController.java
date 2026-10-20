@@ -33,8 +33,8 @@ public class RideController {
     }
 
     @GetMapping("/api/v1/driver/rides/requests")
-    public List<RideDtos.RideResponse> requests() {
-        return service.dispatchQueue();
+    public List<RideDtos.RideResponse> requests(Authentication auth) {
+        return service.dispatchQueue((UUID) auth.getPrincipal());
     }
 
     @GetMapping("/api/v1/driver/rides")
