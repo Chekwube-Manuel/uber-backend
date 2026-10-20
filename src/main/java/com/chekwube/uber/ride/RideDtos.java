@@ -2,6 +2,7 @@ package com.chekwube.uber.ride;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
@@ -10,10 +11,10 @@ public final class RideDtos {
     private RideDtos() {}
 
     public record CreateRideRequest(
-        @DecimalMin("-90.0") @DecimalMax("90.0") double pickupLatitude,
-        @DecimalMin("-180.0") @DecimalMax("180.0") double pickupLongitude,
-        @DecimalMin("-90.0") @DecimalMax("90.0") double destinationLatitude,
-        @DecimalMin("-180.0") @DecimalMax("180.0") double destinationLongitude
+        @NotNull @DecimalMin("-90.0") @DecimalMax("90.0") Double pickupLatitude,
+        @NotNull @DecimalMin("-180.0") @DecimalMax("180.0") Double pickupLongitude,
+        @NotNull @DecimalMin("-90.0") @DecimalMax("90.0") Double destinationLatitude,
+        @NotNull @DecimalMin("-180.0") @DecimalMax("180.0") Double destinationLongitude
     ) {}
 
     public record RideResponse(
