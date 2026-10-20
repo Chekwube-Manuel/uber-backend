@@ -23,6 +23,9 @@ app:
   security:
     jwt-secret: ${APP_TOKEN_KEY}
     jwt-expiration-seconds: ${JWT_EXPIRATION_SECONDS:900}
+  pricing:
+    base-fare-naira: ${BASE_FARE_NAIRA:500}
+    per-km-fare-naira: ${PER_KM_FARE_NAIRA:150}
 server:
   port: ${PORT:8080}
   shutdown: graceful
