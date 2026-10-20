@@ -12,7 +12,8 @@ A ride-hailing backend foundation built with Java 21 and Spring Boot.
 - Stateless JWT authentication with BCrypt password hashing
 - Role-aware accounts: `RIDER`, `DRIVER`, and `ADMIN` (admin self-registration is blocked)
 - Separate rider and driver profile APIs with validation and unique phone/vehicle identifiers
-- Driver profiles remain `PENDING` until a future verification workflow approves them
+- Admin-only driver verification and driver online/offline state
+- Driver location updates and bounded nearby-driver search for approved, online drivers
 - Configurable Tomcat and HikariCP connection-pool settings
 
 ## Run locally
@@ -20,7 +21,6 @@ A ride-hailing backend foundation built with Java 21 and Spring Boot.
 Requirements: Java 21, Maven 3.9+, Docker.
 
 ```bash
-# Generate a 256-bit key encoded as Base64 and save it in your shell environment.
 export APP_TOKEN_KEY="$(openssl rand -base64 32)"
 docker compose up --build
 ```
@@ -28,27 +28,46 @@ docker compose up --build
 Register a rider (password must be at least 12 characters):
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \\
-  -H 'Content-Type: application/json' \\
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
   -d '{"email":"rider@example.com","password":"correct-horse-battery-staple"}'
 ```
 
 Log in with `POST /api/v1/auth/login` using the same email and password. The response contains a short-lived bearer token. Send it as `Authorization: Bearer <accessToken>` when calling protected endpoints. Keep `APP_TOKEN_KEY` private and stable across app restarts.
 
+Create or update a rider profile with `PUT /api/v1/rider/profile` and body `{"fullName":"Test Rider","phoneNumber":"+2348012345678"}`.
 
-Create or update a rider profile with `PUT /api/v1/rider/profile`, using the bearer token returned by registration. JSON body example: `{"fullName":"Test Rider","phoneNumber":"+2348012345678"}`.
+Register a driver by passing `"role":"DRIVER"` to `/api/v1/auth/register`, then call `PUT /api/v1/driver/profile` with body `{"fullName":"Test Driver","phoneNumber":"+2348098765432","vehicleMake":"Toyota","vehicleModel":"Corolla","vehicleColor":"Silver","vehiclePlate":"ABC 123XY"}`.
 
-Register a driver by passing `"role":"DRIVER"` to `/api/v1/auth/register`, then call `PUT /api/v1/driver/profile` with the bearer token. Example body: `{"fullName":"Test Driver","phoneNumber":"+2348098765432","vehicleMake":"Toyota","vehicleModel":"Corolla","vehicleColor":"Silver","vehiclePlate":"ABC 123XY"}`.
+### Driver verification and presence
 
-Driver profiles start with `verificationStatus: PENDING`. A profile alone does not authorize a driver to accept trips; verification and availability rules will be implemented before dispatch.
+Drivers start in `PENDING` verification status. A trusted operator must provision the first administrator through direct, controlled database access; admin self-registration is intentionally disabled. For an existing account, the operator can promote it with a reviewed, one-time SQL operation such as:
 
-Check the API:
-
-```bash
-curl http://localhost:8080/api/v1/health
+```sql
+UPDATE app_users SET role = 'ADMIN' WHERE email = 'trusted-admin@example.com';
 ```
 
-Stop the services with `docker compose down`. Add `-v` only when you intentionally want to delete local database data.
+Protect database access, verify the account identity first, and do not expose this operation through a public endpoint.
+
+An administrator can approve or reject a driver using `PUT /api/v1/admin/drivers/{driverId}/verification`:
+
+```json
+{"decision":"APPROVED"}
+```
+
+Only approved drivers can go online. Driver endpoint examples (all require that driver's bearer token):
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/driver/availability \
+  -H "Authorization: Bearer $DRIVER_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"available":true}'
+
+curl -X PUT http://localhost:8080/api/v1/driver/location \
+  -H "Authorization: Bearer $DRIVER_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"latitude":6.5244,"longitude":3.3792}'
+```
+
+Riders can query nearby drivers with their rider token: `GET /api/v1/rider/nearby-drivers?latitude=6.5244&longitude=3.3792&radiusKm=5`. The query returns at most 100 approved, online drivers with location updates from the last two minutes, ordered by distance. This is a discovery primitive, not yet ride dispatch or a reservation/locking mechanism.
 
 ## Performance target
 
@@ -65,7 +84,7 @@ Start with a modular monolith, not premature microservices:
 - Pricing and payments
 - Notifications
 
-Use PostgreSQL as the source of truth. Introduce Redis for ephemeral driver-location/availability reads and caching when measurements justify it. Use a durable queue for asynchronous notifications and other background work. Keep location updates and dispatch isolated behind explicit interfaces so they can scale independently later.
+PostgreSQL remains the source of truth. Nearby-driver lookup currently uses a bounding-box filter and Haversine distance calculation in PostgreSQL; benchmark it with realistic data. For high-frequency location updates or larger geographic datasets, evaluate PostGIS and/or Redis geospatial indexes based on measured latency and consistency needs. Keep location updates and dispatch behind explicit interfaces so they can scale independently later.
 
 ## Production checklist
 
