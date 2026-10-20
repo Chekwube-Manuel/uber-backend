@@ -41,6 +41,8 @@ public class Ride {
     private BigDecimal estimatedFareNaira;
     @Column(name = "final_fare_naira", precision = 12, scale = 2)
     private BigDecimal finalFareNaira;
+    @Column(name = "cancellation_fee_naira", nullable = false, precision = 12, scale = 2)
+    private BigDecimal cancellationFeeNaira = BigDecimal.ZERO;
 
     @Column(name = "requested_at", nullable = false, updatable = false)
     private Instant requestedAt;
@@ -110,10 +112,12 @@ public class Ride {
         this.updatedAt = this.completedAt;
     }
 
-    public void cancel(UUID actorId) {
+    public void cancel(UUID actorId, BigDecimal feeAfterAcceptance) {
         if (status != RideStatus.REQUESTED && status != RideStatus.ACCEPTED && status != RideStatus.ARRIVING) {
             throw new IllegalStateException("Ride cannot be cancelled in its current state");
         }
+        this.cancellationFeeNaira = (status == RideStatus.ACCEPTED || status == RideStatus.ARRIVING)
+            ? feeAfterAcceptance : BigDecimal.ZERO;
         this.status = RideStatus.CANCELLED;
         this.cancelledBy = actorId;
         this.cancelledAt = Instant.now();
@@ -141,6 +145,7 @@ public class Ride {
     public BigDecimal getEstimatedDistanceKm() { return estimatedDistanceKm; }
     public BigDecimal getEstimatedFareNaira() { return estimatedFareNaira; }
     public BigDecimal getFinalFareNaira() { return finalFareNaira; }
+    public BigDecimal getCancellationFeeNaira() { return cancellationFeeNaira; }
     public Instant getRequestedAt() { return requestedAt; }
     public Instant getAcceptedAt() { return acceptedAt; }
     public Instant getArrivingAt() { return arrivingAt; }
