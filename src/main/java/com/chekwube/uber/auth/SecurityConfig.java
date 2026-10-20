@@ -15,6 +15,8 @@ public class SecurityConfig {
   return http.csrf(csrf -> csrf.disable()).httpBasic(basic -> basic.disable()).formLogin(form -> form.disable())
    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
    .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/auth/**", "/api/v1/health", "/actuator/health/**").permitAll()
+    .requestMatchers("/api/v1/rider/**").hasRole("RIDER")
+    .requestMatchers("/api/v1/driver/**").hasRole("DRIVER")
     .requestMatchers("/actuator/**").denyAll().anyRequest().authenticated())
    .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class).build();
  }
