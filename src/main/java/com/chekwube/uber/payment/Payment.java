@@ -37,7 +37,7 @@ public class Payment {
         this.status = PaymentStatus.PENDING; this.updatedAt = Instant.now();
     }
     public void markSuccessful(Long transactionId) {
-        if (this.status == PaymentStatus.REFUNDED || this.status == PaymentStatus.CHARGEBACK) return;
+        if (this.status == PaymentStatus.REFUND_PENDING || this.status == PaymentStatus.REFUNDED || this.status == PaymentStatus.CHARGEBACK) return;
         this.status = PaymentStatus.SUCCESS; this.providerTransactionId = transactionId;
         this.paidAt = Instant.now(); this.updatedAt = this.paidAt;
     }
