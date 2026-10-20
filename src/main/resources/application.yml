@@ -26,6 +26,8 @@ app:
   pricing:
     base-fare-naira: ${BASE_FARE_NAIRA:500}
     per-km-fare-naira: ${PER_KM_FARE_NAIRA:150}
+  dispatch:
+    notification-poll-ms: ${DISPATCH_NOTIFICATION_POLL_MS:3000}
 server:
   port: ${PORT:8080}
   shutdown: graceful

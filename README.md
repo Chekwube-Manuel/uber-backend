@@ -13,6 +13,7 @@ A ride-hailing backend foundation built with Java 21 and Spring Boot.
 - Rider and driver profiles, driver verification, availability, and location discovery
 - Ride request, driver acceptance, lifecycle transitions, cancellation, and history endpoints
 - Configurable fare-estimate rates, Tomcat threads, and HikariCP connection pool
+- Distance-ranked dispatch queue and Server-Sent Events (SSE) ride-request stream
 
 ## Run locally
 
@@ -64,9 +65,10 @@ Content-Type: application/json
 
 The server calculates straight-line distance with the Haversine formula and estimates a fare. Initial defaults are a ₦500 base fare plus ₦150 per kilometre; configure them with `BASE_FARE_NAIRA` and `PER_KM_FARE_NAIRA`. These are development defaults, not a production pricing policy; straight-line distance is not road distance.
 
-### Driver accepts and progresses the ride
+### Driver dispatch and lifecycle
 
-- `GET /api/v1/driver/rides/requests` — view the pending dispatch queue (approved, online drivers only).
+- `GET /api/v1/driver/rides/requests` — view up to 50 pending requests ranked by straight-line distance from the driver's last known location. The service inspects up to 200 oldest pending rides before ranking; this is an initial bounded candidate strategy, not a global nearest-ride guarantee.
+- `GET /api/v1/driver/rides/requests/stream` — authenticated Server-Sent Events stream. Connect with an HTTP client that supports SSE and send the driver's bearer token. New requests emit as `ride-request` events; `heartbeat` events keep the connection active.
 - `POST /api/v1/driver/rides/{rideId}/accept` — accept one requested ride.
 - `POST /api/v1/driver/rides/{rideId}/arriving` — mark arrival at pickup.
 - `POST /api/v1/driver/rides/{rideId}/start` — start the trip after arrival.
@@ -75,14 +77,28 @@ The server calculates straight-line distance with the Haversine formula and esti
 - `GET /api/v1/rider/rides` and `GET /api/v1/driver/rides` — list the latest 20 rides for the authenticated account.
 - `GET /api/v1/rider/rides/{rideId}` — get a ride owned by the authenticated rider.
 
-Ride transitions are checked in the domain model and rows are locked during acceptance and state changes. Driver presence rows are also locked when accepting, preventing concurrent requests from assigning multiple active rides to the same driver. Driver requests are not yet automatically pushed or geographically ranked, and cancellation policies, road routing, payment collection, and fare reconciliation are not implemented.
+The SSE implementation polls the existing dispatch query every `DISPATCH_NOTIFICATION_POLL_MS` milliseconds (default 3000) and keeps subscriber state in application memory. This is a single-instance starting point: multiple app replicas can send duplicate events, and a restart drops connection state. Use a durable broker/outbox and shared subscription coordination before horizontally scaling it. Clients should reconnect and refresh the regular request queue after reconnecting.
 
-## Performance target
+Ride transitions are checked in the domain model and rows are locked during acceptance and state changes. Driver presence rows are also locked when accepting, preventing concurrent requests from assigning multiple active rides to the same driver. Road routing, payment collection, reconciliation, idempotency, and a production cancellation policy are not implemented yet.
 
-The engineering target is **10,000 requests per minute (about 167 requests/second)**, not a verified benchmark. Test with realistic concurrency and data before claiming the target is met. Monitor p95/p99 latency, error rate, CPU, memory, database query latency, and connection-pool saturation.
+## Tests and load testing
+
+The integration test uses Testcontainers to run migrations against a real PostgreSQL container. It requires Docker. The GitHub Actions runner normally provides Docker, but local runs need a working Docker daemon:
+
+```bash
+mvn --batch-mode verify
+```
+
+A k6 script is provided under `load-tests/ride-request.js`. Run it only against a staging environment with a dedicated rider token; it creates ride rows. Example:
+
+```bash
+k6 run -e BASE_URL=http://localhost:8080 -e RIDER_TOKEN="$RIDER_TOKEN" -e RATE=10 -e DURATION=30s load-tests/ride-request.js
+```
+
+To test the 10,000 requests/minute target, set `RATE=167` after validating the lower rate and checking database cleanup/retention. The target is not a verified benchmark. Measure p95/p99 latency, error rate, CPU, memory, database query latency, and connection-pool saturation.
 
 ## Architecture and production checklist
 
 Keep the current modular monolith until measurements justify splitting services. PostgreSQL is the source of truth. Evaluate PostGIS or Redis geospatial indexes for high-frequency location search only after benchmarking.
 
-Before production, add database-backed integration tests and migration tests; rate limiting and idempotency; token refresh/revocation; structured logs and tracing; TLS and deployment secrets; payment reconciliation; cancellation/timeout policy; and load tests. Avoid increasing thread or database pool sizes blindly—excess concurrency can overload PostgreSQL.
+Before production, add rate limiting and idempotency; token refresh/revocation; structured logs and tracing; TLS and deployment secrets; payment reconciliation; road routing and fare policy; cancellation/timeout policy; and realistic load tests. Avoid increasing thread or database pool sizes blindly—excess concurrency can overload PostgreSQL.

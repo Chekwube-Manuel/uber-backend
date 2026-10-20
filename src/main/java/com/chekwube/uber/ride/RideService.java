@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -80,9 +81,21 @@ public class RideService {
         if (!driverPresence.isAvailable()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Go online before viewing ride requests");
         }
+        if (driverPresence.getLatitude() == null || driverPresence.getLongitude() == null
+            || driverPresence.getLastLocationAt() == null
+            || driverPresence.getLastLocationAt().isBefore(java.time.Instant.now().minusSeconds(120))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Send a fresh location update before viewing ride requests");
+        }
         if (rides.existsByDriverUserIdAndStatusIn(driverId, ACTIVE_DRIVER_STATUSES)) return List.of();
-        return rides.findTop50ByStatusAndDriverUserIdIsNullOrderByRequestedAtAsc(RideStatus.REQUESTED)
-            .stream().map(RideDtos.RideResponse::from).toList();
+
+        return rides.findTop200ByStatusAndDriverUserIdIsNullOrderByRequestedAtAsc(RideStatus.REQUESTED)
+            .stream()
+            .sorted(Comparator.comparingDouble(ride -> distanceKm(
+                driverPresence.getLatitude(), driverPresence.getLongitude(),
+                ride.getPickupLatitude(), ride.getPickupLongitude())))
+            .limit(50)
+            .map(RideDtos.RideResponse::from)
+            .toList();
     }
 
     @Transactional
@@ -158,7 +171,7 @@ public class RideService {
         }
     }
 
-    private double distanceKm(double lat1, double lon1, double lat2, double lon2) {
+    static double distanceKm(double lat1, double lon1, double lat2, double lon2) {
         double earthRadiusKm = 6371.0088;
         double dLat = Math.toRadians(lat2 - lat1);
         double dLon = Math.toRadians(lon2 - lon1);
