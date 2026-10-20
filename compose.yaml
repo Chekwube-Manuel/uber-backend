@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: uber
+      POSTGRES_USER: uber
+      POSTGRES_PASSWORD: uber
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uber -d uber"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/uber
+      DB_USERNAME: uber
+      DB_PASSWORD: uber
+      DB_POOL_SIZE: 20
+    ports:
+      - "8080:8080"
+volumes:
+  postgres_data:
