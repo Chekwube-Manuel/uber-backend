@@ -15,7 +15,7 @@ class RideServiceTest {
     void requestsRideWithServerCalculatedFare() {
         RideRepository rides = mock(RideRepository.class);
         RideService service = new RideService(rides, mock(DriverProfileRepository.class),
-            mock(DriverPresenceRepository.class), new BigDecimal("500"), new BigDecimal("150"));
+            mock(DriverPresenceRepository.class), new BigDecimal("500"), new BigDecimal("150"), new BigDecimal("300"));
         when(rides.save(any(Ride.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RideDtos.RideResponse response = service.request(UUID.randomUUID(),
@@ -25,6 +25,19 @@ class RideServiceTest {
         assertTrue(response.estimatedDistanceKm().compareTo(BigDecimal.ZERO) > 0);
         assertTrue(response.estimatedFareNaira().compareTo(new BigDecimal("500")) > 0);
         verify(rides).save(any(Ride.class));
+    }
+
+    @Test
+    void cancellationFeeOnlyAppliesAfterDriverAcceptance() {
+        UUID rider = UUID.randomUUID();
+        Ride requested = new Ride(rider, 6.5, 3.3, 6.6, 3.4, new BigDecimal("12.00"), new BigDecimal("2300.00"));
+        requested.cancel(rider, new BigDecimal("300.00"));
+        assertEquals(BigDecimal.ZERO, requested.getCancellationFeeNaira());
+
+        Ride accepted = new Ride(rider, 6.5, 3.3, 6.6, 3.4, new BigDecimal("12.00"), new BigDecimal("2300.00"));
+        accepted.accept(UUID.randomUUID());
+        accepted.cancel(rider, new BigDecimal("300.00"));
+        assertEquals(new BigDecimal("300.00"), accepted.getCancellationFeeNaira());
     }
 
     @Test
