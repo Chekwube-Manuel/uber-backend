@@ -52,7 +52,7 @@ public class PaymentService {
             } else if (ride.getStatus() == RideStatus.CANCELLED && ride.getCancellationFeeNaira() != null) {
                 fare = ride.getCancellationFeeNaira();
                 if (fare.signum() == 0) throw new ResponseStatusException(HttpStatus.CONFLICT, "No cancellation fee is due");
-                if (payments.existsByRideIdAndStatus(rideId, PaymentStatus.SUCCESS))
+                if (payments.existsByRideIdAndStatusIn(rideId, PAYMENT_TERMINAL_OR_ACTIVE))
                     throw new ResponseStatusException(HttpStatus.CONFLICT, "This ride has already been paid");
             } else {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Payment is available only after a completed ride or a fee-bearing cancellation");
