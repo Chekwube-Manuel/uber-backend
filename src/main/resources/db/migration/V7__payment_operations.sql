@@ -1,3 +1,5 @@
+ALTER TABLE rides ADD COLUMN cancellation_fee_naira NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (cancellation_fee_naira >= 0);
+
 ALTER TABLE payments DROP CONSTRAINT IF EXISTS payments_status_check;
 ALTER TABLE payments ADD CONSTRAINT payments_status_check
     CHECK (status IN ('INITIALIZED', 'PENDING', 'SUCCESS', 'FAILED', 'REFUND_PENDING', 'REFUNDED', 'CHARGEBACK'));
