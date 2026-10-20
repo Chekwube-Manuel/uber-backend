@@ -32,7 +32,7 @@ public class Payment {
     @Column(nullable = false, length = 20)
     private PaymentStatus status;
 
-    @Column(name = "authorization_url")
+    @Column(name = "authorization_url", columnDefinition = "text")
     private String authorizationUrl;
 
     @Column(name = "access_code", length = 128)
