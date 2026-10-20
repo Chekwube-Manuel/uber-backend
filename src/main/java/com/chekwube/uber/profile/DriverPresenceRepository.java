@@ -1,12 +1,19 @@
 package com.chekwube.uber.profile;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface DriverPresenceRepository extends JpaRepository<DriverPresence, UUID> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from DriverPresence p where p.driverUserId = :driverId")
+    Optional<DriverPresence> findByIdForUpdate(@Param("driverId") UUID driverId);
+
     @Query(value = """
         SELECT p.*
         FROM driver_presence p
@@ -18,6 +25,11 @@ public interface DriverPresenceRepository extends JpaRepository<DriverPresence, 
           AND p.last_location_at >= CURRENT_TIMESTAMP - INTERVAL '2 minutes'
           AND p.latitude BETWEEN :minLatitude AND :maxLatitude
           AND p.longitude BETWEEN :minLongitude AND :maxLongitude
+          AND NOT EXISTS (
+              SELECT 1 FROM rides r
+              WHERE r.driver_user_id = p.driver_user_id
+                AND r.status IN ('ACCEPTED', 'ARRIVING', 'IN_PROGRESS')
+          )
           AND 6371.0 * acos(least(1.0, greatest(-1.0,
               cos(radians(:latitude)) * cos(radians(p.latitude)) *
               cos(radians(p.longitude) - radians(:longitude)) +
