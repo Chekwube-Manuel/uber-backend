@@ -26,6 +26,7 @@ app:
   pricing:
     base-fare-naira: ${BASE_FARE_NAIRA:500}
     per-km-fare-naira: ${PER_KM_FARE_NAIRA:150}
+    cancellation-fee-after-acceptance-naira: ${CANCEL_FEE_AFTER_ACCEPT_NAIRA:300}
   dispatch:
     notification-poll-ms: ${DISPATCH_NOTIFICATION_POLL_MS:3000}
 server:
