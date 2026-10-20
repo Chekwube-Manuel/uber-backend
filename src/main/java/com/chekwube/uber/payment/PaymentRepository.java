@@ -15,6 +15,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @Query("select p from Payment p where p.providerReference = :reference")
     Optional<Payment> findByReferenceForUpdate(@Param("reference") String reference);
 
+    Optional<Payment> findByProviderReference(String reference);
     Optional<Payment> findByProviderReferenceAndRiderUserId(String reference, UUID riderUserId);
     Optional<Payment> findTopByRideIdAndRiderUserIdOrderByCreatedAtDesc(UUID rideId, UUID riderUserId);
     boolean existsByRideIdAndStatus(UUID rideId, PaymentStatus status);
