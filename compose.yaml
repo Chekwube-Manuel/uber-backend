@@ -25,6 +25,9 @@ services:
       DB_PASSWORD: uber
       DB_POOL_SIZE: 20
       APP_TOKEN_KEY: ${APP_TOKEN_KEY:?Set APP_TOKEN_KEY to a base64-encoded key}
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
+      PAYSTACK_CALLBACK_URL: ${PAYSTACK_CALLBACK_URL:-}
+      PAYSTACK_BASE_URL: ${PAYSTACK_BASE_URL:-https://api.paystack.co}
     ports:
       - "8080:8080"
 volumes:
