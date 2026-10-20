@@ -22,6 +22,8 @@ import java.util.UUID;
 @Service
 public class PaymentService {
     private static final Set<PaymentStatus> RECONCILABLE = Set.of(PaymentStatus.INITIALIZED, PaymentStatus.PENDING);
+    private static final Set<PaymentStatus> PAYMENT_TERMINAL_OR_ACTIVE = Set.of(
+        PaymentStatus.SUCCESS, PaymentStatus.REFUND_PENDING, PaymentStatus.REFUNDED, PaymentStatus.CHARGEBACK);
     private final PaymentRepository payments;
     private final RideRepository rides;
     private final UserRepository users;
@@ -44,7 +46,7 @@ public class PaymentService {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ride not found");
             BigDecimal fare;
             if (ride.getStatus() == RideStatus.COMPLETED) {
-                if (payments.existsByRideIdAndStatus(rideId, PaymentStatus.SUCCESS))
+                if (payments.existsByRideIdAndStatusIn(rideId, PAYMENT_TERMINAL_OR_ACTIVE))
                     throw new ResponseStatusException(HttpStatus.CONFLICT, "This ride has already been paid");
                 fare = ride.getFinalFareNaira();
             } else if (ride.getStatus() == RideStatus.CANCELLED && ride.getCancellationFeeNaira() != null) {
