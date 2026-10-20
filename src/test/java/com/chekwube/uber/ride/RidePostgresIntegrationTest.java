@@ -1,5 +1,8 @@
 package com.chekwube.uber.ride;
 
+import com.chekwube.uber.payment.Payment;
+import com.chekwube.uber.payment.PaymentRepository;
+import com.chekwube.uber.payment.PaymentStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,8 +38,11 @@ class RidePostgresIntegrationTest {
     @Autowired
     RideRepository rides;
 
+    @Autowired
+    PaymentRepository payments;
+
     @Test
-    void migrationsAndRidePersistenceWorkAgainstPostgres() {
+    void migrationsRideAndPaymentPersistenceWorkAgainstPostgres() {
         UUID riderId = UUID.randomUUID();
         jdbc.update("INSERT INTO app_users (id, email, password_hash, role) VALUES (?, ?, ?, ?)",
             riderId, "rider-" + riderId + "@integration.test", "test-hash", "RIDER");
@@ -49,7 +55,16 @@ class RidePostgresIntegrationTest {
         assertEquals(riderId, persisted.getRiderUserId());
         assertEquals(RideStatus.REQUESTED, persisted.getStatus());
         assertEquals(new BigDecimal("702.50"), persisted.getEstimatedFareNaira());
+
+        Payment payment = new Payment(ride.getId(), riderId, "ridepay-" + UUID.randomUUID(), 70250L);
+        payment.setCheckout("https://checkout.paystack.com/example", "test-access-code");
+        payments.saveAndFlush(payment);
+        Payment persistedPayment = payments.findByProviderReference(payment.getProviderReference()).orElseThrow();
+        assertEquals(PaymentStatus.PENDING, persistedPayment.getStatus());
+        assertEquals(70250L, persistedPayment.getAmountMinor());
+        assertEquals("NGN", persistedPayment.getCurrency());
+
         assertTrue(jdbc.queryForObject(
-            "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE", Long.class) >= 5);
+            "SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE", Long.class) >= 6);
     }
 }

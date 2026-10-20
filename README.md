@@ -102,3 +102,27 @@ To test the 10,000 requests/minute target, set `RATE=167` after validating the l
 Keep the current modular monolith until measurements justify splitting services. PostgreSQL is the source of truth. Evaluate PostGIS or Redis geospatial indexes for high-frequency location search only after benchmarking.
 
 Before production, add rate limiting and idempotency; token refresh/revocation; structured logs and tracing; TLS and deployment secrets; payment reconciliation; road routing and fare policy; cancellation/timeout policy; and realistic load tests. Avoid increasing thread or database pool sizes blindly—excess concurrency can overload PostgreSQL.
+
+## Paystack payments (NGN)
+
+Payments are initialized only after a ride reaches `COMPLETED`. The backend derives the payable amount from the persisted final fare; clients cannot submit an amount. Paystack's API uses kobo, so ₦1.00 is sent as 100 minor units.
+
+Configure these environment variables on the API server:
+
+- `PAYSTACK_SECRET_KEY` — Paystack secret key. Keep it in the VPS secret manager/environment; never commit it or expose it to the frontend.
+- `PAYSTACK_CALLBACK_URL` — optional absolute URL to which Paystack redirects after checkout.
+- `PAYSTACK_BASE_URL` — optional override for testing; defaults to `https://api.paystack.co`.
+
+### API flow
+
+1. Rider initializes payment for a completed ride: `POST /api/v1/rider/rides/{rideId}/payment`.
+2. The API returns `authorizationUrl`, `reference`, and amount. Redirect the rider to `authorizationUrl`.
+3. Configure the Paystack dashboard webhook URL as `https://YOUR_API_HOST/api/v1/webhooks/paystack`.
+4. Paystack's `charge.success` webhook is validated using HMAC-SHA512 over the **raw request body** and the `x-paystack-signature` header. The backend checks reference, amount, and currency before marking a payment successful.
+5. The rider can reconcile/check a payment by calling `GET /api/v1/rider/payments/{reference}`; the backend verifies the transaction server-to-server with Paystack.
+
+The webhook endpoint is public at the HTTP layer because Paystack cannot provide a rider JWT; the cryptographic signature is mandatory. Do not treat the browser callback as proof of payment. Successful webhook processing is idempotent for an existing payment reference.
+
+### Current limitations
+
+This is the first Paystack collection integration, not a complete settlement system. Payment collection currently happens after ride completion, with no charge for pre-trip cancellations. Automatic scheduled reconciliation, refunds, driver payouts, chargeback handling, payment-provider contract tests, and a production cancellation-fee policy remain unimplemented. The verify endpoint provides on-demand reconciliation. External Paystack calls currently occur during database transactions; before high-volume production, move provider calls outside long-held database locks and use an outbox/state-machine workflow. Test against Paystack test keys before enabling live collection.
