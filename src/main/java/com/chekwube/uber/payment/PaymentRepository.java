@@ -22,6 +22,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     Optional<Payment> findTopByRideIdAndRiderUserIdOrderByCreatedAtDesc(UUID rideId, UUID riderUserId);
     Optional<Payment> findByRideIdAndStatus(UUID rideId, PaymentStatus status);
     boolean existsByRideIdAndStatus(UUID rideId, PaymentStatus status);
+    boolean existsByRideIdAndStatusIn(UUID rideId, Collection<PaymentStatus> statuses);
     List<Payment> findTop20ByRiderUserIdOrderByCreatedAtDesc(UUID riderUserId);
     List<Payment> findTop50ByStatusInAndUpdatedAtBeforeOrderByUpdatedAtAsc(Collection<PaymentStatus> statuses, Instant updatedAt);
 }
