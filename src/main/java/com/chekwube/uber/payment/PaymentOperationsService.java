@@ -102,7 +102,7 @@ public class PaymentOperationsService {
             String status = normalizeRefundStatus(event.startsWith("refund.") ? event.substring(7) : event);
             refund.update(status, providerRefundId); refunds.save(refund);
             if ("PROCESSED".equals(status)) payment.markRefunded();
-            else if ("FAILED".equals(status)) payment.markSuccessful(payment.getProviderTransactionId());
+            else if ("FAILED".equals(status)) payment.markRefundFailed();
             payments.save(payment);
         });
     }
