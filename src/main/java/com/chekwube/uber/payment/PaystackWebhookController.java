@@ -18,12 +18,14 @@ import java.util.HexFormat;
 @RequestMapping("/api/v1/webhooks/paystack")
 public class PaystackWebhookController {
     private final PaymentService payments;
+    private final PaymentOperationsService operations;
     private final ObjectMapper objectMapper;
     private final String secretKey;
 
-    public PaystackWebhookController(PaymentService payments, ObjectMapper objectMapper,
+    public PaystackWebhookController(PaymentService payments, PaymentOperationsService operations, ObjectMapper objectMapper,
                                      @Value("${PAYSTACK_SECRET_KEY:}") String secretKey) {
         this.payments = payments;
+        this.operations = operations;
         this.objectMapper = objectMapper;
         this.secretKey = secretKey == null ? "" : secretKey.trim();
     }
@@ -37,8 +39,25 @@ public class PaystackWebhookController {
         }
         try {
             JsonNode event = objectMapper.readTree(rawBody);
-            if (!"charge.success".equals(event.path("event").asText())) return ResponseEntity.ok().build();
+            String eventName = event.path("event").asText("");
             JsonNode data = event.path("data");
+            if ("charge.dispute.create".equals(eventName) || "charge.dispute.resolve".equals(eventName)) {
+                String reference = data.path("transaction").path("reference").asText("");
+                if (!reference.isBlank()) payments.handleChargeback(reference, data.path("id").asText(""), data.path("status").asText(eventName));
+                return ResponseEntity.ok().build();
+            }
+            if (eventName.startsWith("refund.")) {
+                String reference = data.path("transaction_reference").asText("");
+                if (!reference.isBlank()) operations.handleRefundWebhook(reference, eventName,
+                    data.path("id").canConvertToLong() ? data.path("id").asLong() : null);
+                return ResponseEntity.ok().build();
+            }
+            if (eventName.startsWith("transfer.")) {
+                String reference = data.path("reference").asText("");
+                if (!reference.isBlank()) operations.handleTransferWebhook(reference, eventName, data.path("transfer_code").asText(""));
+                return ResponseEntity.ok().build();
+            }
+            if (!"charge.success".equals(eventName)) return ResponseEntity.ok().build();
             String reference = data.path("reference").asText("");
             String currency = data.path("currency").asText("");
             String status = data.path("status").asText("");
