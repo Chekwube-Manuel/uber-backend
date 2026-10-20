@@ -69,7 +69,18 @@ public class RideService {
     }
 
     @Transactional(readOnly = true)
-    public List<RideDtos.RideResponse> dispatchQueue() {
+    public List<RideDtos.RideResponse> dispatchQueue(UUID driverId) {
+        DriverProfile profile = driverProfiles.findById(driverId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Driver profile not found"));
+        if (!"APPROVED".equals(profile.getVerificationStatus())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Driver must be approved before viewing ride requests");
+        }
+        DriverPresence driverPresence = presence.findById(driverId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Go online before viewing ride requests"));
+        if (!driverPresence.isAvailable()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Go online before viewing ride requests");
+        }
+        if (rides.existsByDriverUserIdAndStatusIn(driverId, ACTIVE_DRIVER_STATUSES)) return List.of();
         return rides.findTop50ByStatusAndDriverUserIdIsNullOrderByRequestedAtAsc(RideStatus.REQUESTED)
             .stream().map(RideDtos.RideResponse::from).toList();
     }
@@ -81,7 +92,7 @@ public class RideService {
         if (!"APPROVED".equals(profile.getVerificationStatus())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Driver must be approved before accepting rides");
         }
-        DriverPresence driverPresence = presence.findById(driverId)
+        DriverPresence driverPresence = presence.findByIdForUpdate(driverId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.CONFLICT, "Go online before accepting rides"));
         if (!driverPresence.isAvailable()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Go online before accepting rides");
