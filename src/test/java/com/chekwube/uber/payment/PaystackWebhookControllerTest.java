@@ -34,7 +34,7 @@ class PaystackWebhookControllerTest {
     @Test
     void rejectsInvalidSignatureBeforeProcessingPayload() {
         PaymentService payments = mock(PaymentService.class);
-        PaystackWebhookController controller = new PaystackWebhookController(payments, new ObjectMapper(), SECRET);
+        PaystackWebhookController controller = new PaystackWebhookController(payments, mock(PaymentOperationsService.class), new ObjectMapper(), SECRET);
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
             () -> controller.receive("invalid-signature", "{}".getBytes(StandardCharsets.UTF_8)));
