@@ -29,4 +29,7 @@ public class JwtService {
     public String subject(String token) {
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().getSubject();
     }
+    public String role(String token) {
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().get("role", String.class);
+    }
 }
