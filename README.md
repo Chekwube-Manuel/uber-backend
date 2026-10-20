@@ -11,6 +11,8 @@ A ride-hailing backend foundation built with Java 21 and Spring Boot.
 - Automated health endpoint and authentication service tests
 - Stateless JWT authentication with BCrypt password hashing
 - Role-aware accounts: `RIDER`, `DRIVER`, and `ADMIN` (admin self-registration is blocked)
+- Separate rider and driver profile APIs with validation and unique phone/vehicle identifiers
+- Driver profiles remain `PENDING` until a future verification workflow approves them
 - Configurable Tomcat and HikariCP connection-pool settings
 
 ## Run locally
@@ -32,6 +34,13 @@ curl -X POST http://localhost:8080/api/v1/auth/register \\
 ```
 
 Log in with `POST /api/v1/auth/login` using the same email and password. The response contains a short-lived bearer token. Send it as `Authorization: Bearer <accessToken>` when calling protected endpoints. Keep `APP_TOKEN_KEY` private and stable across app restarts.
+
+
+Create or update a rider profile with `PUT /api/v1/rider/profile`, using the bearer token returned by registration. JSON body example: `{"fullName":"Test Rider","phoneNumber":"+2348012345678"}`.
+
+Register a driver by passing `"role":"DRIVER"` to `/api/v1/auth/register`, then call `PUT /api/v1/driver/profile` with the bearer token. Example body: `{"fullName":"Test Driver","phoneNumber":"+2348098765432","vehicleMake":"Toyota","vehicleModel":"Corolla","vehicleColor":"Silver","vehiclePlate":"ABC 123XY"}`.
+
+Driver profiles start with `verificationStatus: PENDING`. A profile alone does not authorize a driver to accept trips; verification and availability rules will be implemented before dispatch.
 
 Check the API:
 
