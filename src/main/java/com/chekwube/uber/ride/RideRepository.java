@@ -15,7 +15,7 @@ public interface RideRepository extends JpaRepository<Ride, UUID> {
     @Query("select r from Ride r where r.id = :id")
     Optional<Ride> findByIdForUpdate(@Param("id") UUID id);
 
-    List<Ride> findTop50ByStatusAndDriverUserIdIsNullOrderByRequestedAtAsc(RideStatus status);
+    List<Ride> findTop200ByStatusAndDriverUserIdIsNullOrderByRequestedAtAsc(RideStatus status);
 
     List<Ride> findTop20ByRiderUserIdOrderByRequestedAtDesc(UUID riderUserId);
 
