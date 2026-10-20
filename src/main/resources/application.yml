@@ -19,6 +19,10 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+app:
+  security:
+    jwt-secret: ${APP_TOKEN_KEY}
+    jwt-expiration-seconds: ${JWT_EXPIRATION_SECONDS:900}
 server:
   port: ${PORT:8080}
   shutdown: graceful

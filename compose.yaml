@@ -24,6 +24,7 @@ services:
       DB_USERNAME: uber
       DB_PASSWORD: uber
       DB_POOL_SIZE: 20
+      APP_TOKEN_KEY: ${APP_TOKEN_KEY:?Set APP_TOKEN_KEY to a base64-encoded key}
     ports:
       - "8080:8080"
 volumes:
