@@ -19,7 +19,7 @@ class PaystackWebhookControllerTest {
     @Test
     void acceptsSignedSuccessfulChargeAndDelegatesValidatedAmounts() throws Exception {
         PaymentService payments = mock(PaymentService.class);
-        PaystackWebhookController controller = new PaystackWebhookController(payments, new ObjectMapper(), SECRET);
+        PaystackWebhookController controller = new PaystackWebhookController(payments, mock(PaymentOperationsService.class), new ObjectMapper(), SECRET);
         String payload = """
             {"event":"charge.success","data":{"reference":"ridepay-abc123","status":"success","currency":"NGN","amount":70250,"id":123456}}
             """;

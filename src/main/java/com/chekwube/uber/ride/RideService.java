@@ -27,16 +27,20 @@ public class RideService {
     private final DriverPresenceRepository presence;
     private final BigDecimal baseFare;
     private final BigDecimal perKmFare;
+    private final BigDecimal cancellationFeeAfterAcceptance;
 
     public RideService(RideRepository rides, DriverProfileRepository driverProfiles,
                        DriverPresenceRepository presence,
                        @Value("${app.pricing.base-fare-naira:500}") BigDecimal baseFare,
-                       @Value("${app.pricing.per-km-fare-naira:150}") BigDecimal perKmFare) {
+                       @Value("${app.pricing.per-km-fare-naira:150}") BigDecimal perKmFare,
+                       @Value("${app.pricing.cancellation-fee-after-acceptance-naira:300}") BigDecimal cancellationFeeAfterAcceptance) {
         this.rides = rides;
         this.driverProfiles = driverProfiles;
         this.presence = presence;
         this.baseFare = baseFare;
         this.perKmFare = perKmFare;
+        if (cancellationFeeAfterAcceptance.signum() < 0) throw new IllegalArgumentException("Cancellation fee cannot be negative");
+        this.cancellationFeeAfterAcceptance = cancellationFeeAfterAcceptance;
     }
 
     @Transactional
@@ -155,7 +159,7 @@ public class RideService {
         if (!ride.getRiderUserId().equals(riderId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ride not found");
         }
-        transition(() -> ride.cancel(riderId));
+        transition(() -> ride.cancel(riderId, cancellationFeeAfterAcceptance));
         return RideDtos.RideResponse.from(rides.save(ride));
     }
 
