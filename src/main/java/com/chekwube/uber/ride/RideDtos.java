@@ -22,14 +22,14 @@ public final class RideDtos {
         double pickupLatitude, double pickupLongitude,
         double destinationLatitude, double destinationLongitude,
         BigDecimal estimatedDistanceKm, BigDecimal estimatedFareNaira,
-        BigDecimal finalFareNaira, Instant requestedAt, Instant acceptedAt,
+        BigDecimal finalFareNaira, BigDecimal cancellationFeeNaira, Instant requestedAt, Instant acceptedAt,
         Instant arrivingAt, Instant startedAt, Instant completedAt,
         Instant cancelledAt, UUID cancelledBy, Instant updatedAt
     ) {
         static RideResponse from(Ride r) {
             return new RideResponse(r.getId(), r.getRiderUserId(), r.getDriverUserId(), r.getStatus(),
                 r.getPickupLatitude(), r.getPickupLongitude(), r.getDestinationLatitude(), r.getDestinationLongitude(),
-                r.getEstimatedDistanceKm(), r.getEstimatedFareNaira(), r.getFinalFareNaira(), r.getRequestedAt(),
+                r.getEstimatedDistanceKm(), r.getEstimatedFareNaira(), r.getFinalFareNaira(), r.getCancellationFeeNaira(), r.getRequestedAt(),
                 r.getAcceptedAt(), r.getArrivingAt(), r.getStartedAt(), r.getCompletedAt(), r.getCancelledAt(),
                 r.getCancelledBy(), r.getUpdatedAt());
         }
