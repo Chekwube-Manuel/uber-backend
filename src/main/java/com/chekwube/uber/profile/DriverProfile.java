@@ -27,6 +27,13 @@ public class DriverProfile {
     public void update(String fullName, String phoneNumber, String vehicleMake, String vehicleModel, String vehicleColor, String vehiclePlate) {
         this.fullName = fullName.trim(); this.phoneNumber = phoneNumber.trim(); this.vehicleMake = vehicleMake.trim(); this.vehicleModel = vehicleModel.trim(); this.vehicleColor = vehicleColor.trim(); this.vehiclePlate = normalizePlate(vehiclePlate); this.updatedAt = Instant.now();
     }
+    public void setVerificationStatus(String status) {
+        if (!"APPROVED".equals(status) && !"REJECTED".equals(status) && !"PENDING".equals(status)) {
+            throw new IllegalArgumentException("Unsupported driver verification status");
+        }
+        this.verificationStatus = status;
+        this.updatedAt = Instant.now();
+    }
     private String normalizePlate(String plate) { return plate.trim().toUpperCase(java.util.Locale.ROOT); }
     public UUID getUserId() { return userId; }
     public String getFullName() { return fullName; }
