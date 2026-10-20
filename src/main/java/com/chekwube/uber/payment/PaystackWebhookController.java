@@ -41,9 +41,10 @@ public class PaystackWebhookController {
             JsonNode data = event.path("data");
             String reference = data.path("reference").asText("");
             String currency = data.path("currency").asText("");
+            String status = data.path("status").asText("");
             long amount = data.path("amount").asLong(-1);
             Long transactionId = data.path("id").canConvertToLong() ? data.path("id").asLong() : null;
-            if (reference.isBlank() || amount < 0 || currency.isBlank()) {
+            if (reference.isBlank() || amount < 0 || currency.isBlank() || !"success".equalsIgnoreCase(status)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Malformed Paystack charge.success event");
             }
             payments.handleSuccessfulWebhook(reference, amount, currency, transactionId);
